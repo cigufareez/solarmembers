@@ -1,0 +1,2296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Science Lab Cikgu Fareez - Solar System DLP Year 3</title>
+  
+  <!-- External Libraries: Tailwind CSS, Tone.js Sound Synthesis, and Confetti FX -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <!-- Google Fonts: Fredoka (Kid-friendly), Inter (Clean UI), Orbitron (Futuristic Sci-Fi) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;600;700;800&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Fredoka', 'Inter', sans-serif;
+      background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+      min-height: 100vh;
+      color: #f1f5f9;
+      overflow-x: hidden;
+    }
+    .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.4), inset 0 0 15px rgba(251, 191, 36, 0.2); }
+      50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.8), inset 0 0 25px rgba(251, 191, 36, 0.5); }
+    }
+    .sun-glow {
+      animation: pulseGlow 3s infinite ease-in-out;
+    }
+    .cosmic-card {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .cosmic-card:hover {
+      border-color: rgba(96, 165, 250, 0.5);
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090a0f;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3b82f6;
+    }
+
+    /* Print media styling for physical certificate printing */
+    @media print {
+      @page {
+        size: landscape;
+        margin: 8mm;
+      }
+      body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      body * {
+        visibility: hidden;
+      }
+      header, .tab-btn, #section-notes, #section-games, #quiz-card-container,
+      .no-print, button, #toast-box, #member-modal, #badges-modal,
+      #final-stats-summary, #cert-name-input-group, #cert-preview-modal {
+        display: none !important;
+      }
+      #section-quiz, #quiz-result-container {
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+      #printable-certificate, #printable-certificate * {
+        visibility: visible;
+      }
+      #printable-certificate {
+        position: fixed !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 95% !important;
+        max-width: 980px !important;
+        margin: 0 auto !important;
+        padding: 28px !important;
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border: 8px double #b45309 !important;
+        border-radius: 18px !important;
+        box-shadow: none !important;
+        page-break-inside: avoid !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .cert-dark-text {
+        color: #0f172a !important;
+      }
+      .cert-gold-text {
+        color: #b45309 !important;
+      }
+      .cert-cyan-text {
+        color: #0369a1 !important;
+      }
+      .cert-border {
+        border-color: #d97706 !important;
+      }
+    }
+  </style>
+</head>
+<body class="selection:bg-yellow-400 selection:text-black">
+
+  <script>
+    let audioReady = false;
+    let sfxSynth, chordSynth;
+
+    function initAudio() {
+      if (audioReady) return;
+      try {
+        Tone.start();
+        sfxSynth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: "triangle" },
+          envelope: { attack: 0.02, decay: 0.1, sustain: 0.1, release: 0.4 }
+        }).toDestination();
+        sfxSynth.volume.value = -6;
+
+        chordSynth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.05, decay: 0.3, sustain: 0.2, release: 0.8 }
+        }).toDestination();
+        chordSynth.volume.value = -8;
+        audioReady = true;
+      } catch (e) {
+        console.warn("Audio initialization notice:", e);
+      }
+    }
+
+    const playSound = (type) => {
+      initAudio();
+      if (!audioReady) return;
+      try {
+        const now = Tone.now();
+        if (type === 'click') {
+          sfxSynth.triggerAttackRelease("C5", "32n", now);
+        } else if (type === 'correct') {
+          sfxSynth.triggerAttackRelease(["E5", "G5", "C6"], "16n", now);
+        } else if (type === 'wrong') {
+          sfxSynth.triggerAttackRelease(["D3", "C#3"], "8n", now);
+        } else if (type === 'badge') {
+          chordSynth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n", now);
+        } else if (type === 'finish') {
+          chordSynth.triggerAttackRelease(["C4", "G4", "C5", "E5", "G5"], "4n", now);
+        }
+      } catch (err) {
+        // Safe sound fallback
+      }
+    };
+  </script>
+
+  <header class="sticky top-0 z-50 border-b border-indigo-950/80 bg-slate-950/85 backdrop-blur-md px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Title & DLP Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-amber-500/20 text-2xl">
+          🚀
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg md:text-xl font-bold font-orbitron tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-400 to-cyan-300">
+              Virtual Science Lab Cikgu Fareez
+            </h1>
+            <span class="hidden sm:inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full bg-cyan-900/60 text-cyan-300 border border-cyan-500/30">
+              Science DLP Year 3
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 flex items-center gap-1">
+            <span>Learning Standard: 9.1.1 List members of the Solar System</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Gamification Profile Bar -->
+      <div class="flex items-center gap-3 bg-slate-900/90 border border-slate-700/60 rounded-full px-4 py-1.5 shadow-inner">
+        <!-- XP Points -->
+        <div class="flex items-center gap-1.5 text-amber-300 font-bold text-sm">
+          <span>⭐</span>
+          <span id="stat-xp">0</span> <span class="text-[10px] text-amber-200/70 font-normal">XP</span>
+        </div>
+        <div class="w-px h-4 bg-slate-700"></div>
+        <!-- Badges Count -->
+        <div class="flex items-center gap-1.5 text-cyan-300 font-bold text-sm cursor-pointer hover:opacity-80 transition" onclick="toggleBadgesModal()">
+          <span>🎖️</span>
+          <span id="stat-badges">0/4</span> <span class="text-[10px] text-cyan-200/70 font-normal">Badges</span>
+        </div>
+        <div class="w-px h-4 bg-slate-700"></div>
+        <!-- Audio Enable Button -->
+        <button onclick="initAudio(); playSound('click'); showToast('Audio effects active! 🔊')" class="text-slate-400 hover:text-white text-xs px-1" title="Enable Sound">
+          🔊
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <div class="flex flex-wrap justify-center gap-2 sm:gap-4 mb-8">
+      <button id="tab-btn-notes" onclick="switchTab('notes')" class="tab-btn flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25">
+        <span class="text-lg">📖</span> 1. Interactive Notes & Members
+      </button>
+      <button id="tab-btn-games" onclick="switchTab('games')" class="tab-btn flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all duration-200 bg-slate-800/80 hover:bg-slate-700 text-slate-300">
+        <span class="text-lg">🎮</span> 2. Space Mission Challenges
+      </button>
+      <button id="tab-btn-quiz" onclick="switchTab('quiz')" class="tab-btn flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all duration-200 bg-slate-800/80 hover:bg-slate-700 text-slate-300">
+        <span class="text-lg">📝</span> 3. Final Assessment (20 Questions)
+      </button>
+      <button id="tab-btn-scoreboard" onclick="switchTab('scoreboard')" class="tab-btn flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all duration-200 bg-slate-800/80 hover:bg-slate-700 text-amber-300 border border-amber-500/30">
+        <span class="text-lg">📊</span> 4. Live Scoreboard
+      </button>
+    </div>
+
+    <section id="section-notes" class="space-y-8 block">
+      <!-- Objective Banner -->
+      <div class="cosmic-card rounded-3xl p-5 border-l-4 border-l-amber-400 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-widest">
+            <span>🎯 DSKP Year 3 Science Learning Standard</span>
+          </div>
+          <h2 class="text-xl md:text-2xl font-bold text-white">9.1.1 List the Members of the Solar System</h2>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Our Solar System is a huge cosmic family! Let's explore <strong class="text-yellow-300">The Center of the Solar System</strong>, <strong class="text-yellow-300">All Members of the Solar System</strong>, and the <strong class="text-yellow-300">8 Planets in Sequence from the Sun</strong>.
+          </p>
+        </div>
+        <button onclick="awardXP(10, 'Completed Lesson Objective!'); playSound('click')" class="shrink-0 px-4 py-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold transition flex items-center gap-1.5">
+          <span>✨</span> Claim +10 XP Reader
+        </button>
+      </div>
+
+      <!-- Part 1: The Center of the Solar System -->
+      <div class="cosmic-card rounded-3xl p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="px-3 py-1 bg-amber-500/20 border border-amber-400 text-amber-300 rounded-full text-xs font-bold font-orbitron">PART 1</span>
+          <h3 class="text-xl sm:text-2xl font-bold text-yellow-300">The Center of the Solar System</h3>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div class="lg:col-span-4 flex flex-col items-center text-center p-6 bg-gradient-to-b from-amber-500/10 to-orange-600/10 border border-amber-500/30 rounded-2xl">
+            <div class="w-36 h-36 rounded-full bg-gradient-to-tr from-amber-400 via-yellow-400 to-orange-500 sun-glow flex items-center justify-center text-5xl mb-4 relative">
+              ☀️
+              <span class="absolute -bottom-2 bg-yellow-950 text-yellow-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-400">
+                Center / Pusat
+              </span>
+            </div>
+            <h4 class="text-xl font-bold text-white">The Sun (Matahari)</h4>
+            <p class="text-xs text-amber-200/80 mt-1">A giant self-luminous star</p>
+          </div>
+          <div class="lg:col-span-8 space-y-4 text-slate-300 text-sm leading-relaxed">
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-700">
+              <h5 class="font-bold text-amber-300 mb-1 flex items-center gap-2">
+                <span>🔥</span> 1. Position in Space
+              </h5>
+              <p>The Sun is located right at the <strong class="text-white">center of the Solar System</strong>. All other celestial members orbit around the Sun in fixed elliptical paths called <strong class="text-white">orbits</strong>.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-700">
+              <h5 class="font-bold text-amber-300 mb-1 flex items-center gap-2">
+                <span>💡</span> 2. Primary Source of Light & Heat
+              </h5>
+              <p>The Sun is the <strong class="text-white">only member that emits its own light and heat</strong>. The planets and moons do not produce light; they only reflect sunlight back into space.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-700">
+              <h5 class="font-bold text-amber-300 mb-1 flex items-center gap-2">
+                <span>🧲</span> 3. Strong Gravitational Pull
+              </h5>
+              <p>Because the Sun is colossal and massive, its <strong class="text-white">huge gravitational attraction</strong> keeps all planets, asteroids, meteoroids, and comets safely travelling along their orbits.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cosmic-card rounded-3xl p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="px-3 py-1 bg-cyan-500/20 border border-cyan-400 text-cyan-300 rounded-full text-xs font-bold font-orbitron">PART 2</span>
+          <h3 class="text-xl sm:text-2xl font-bold text-cyan-300">Members of the Solar System</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-6">
+          Click each celestial member card to discover in-depth Science Year 3 facts:
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Member 1: The Sun -->
+          <div class="p-5 rounded-2xl bg-slate-900/80 border border-amber-500/30 hover:border-amber-400 transition cursor-pointer" onclick="openMemberModal('sun')">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-3xl">☀️</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300 border border-amber-500/40">Center</span>
+            </div>
+            <h4 class="text-lg font-bold text-white">1. The Sun</h4>
+            <p class="text-xs text-slate-300 mt-2 line-clamp-3">A giant ball of hot glowing gases at the center. Provides vital light and heat energy to all members.</p>
+            <span class="inline-block mt-3 text-xs text-amber-400 font-semibold hover:underline">Learn more &rarr;</span>
+          </div>
+
+          <!-- Member 2: Planets -->
+          <div class="p-5 rounded-2xl bg-slate-900/80 border border-blue-500/30 hover:border-blue-400 transition cursor-pointer" onclick="openMemberModal('planets')">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-3xl">🪐</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300 border border-blue-500/40">8 Planets</span>
+            </div>
+            <h4 class="text-lg font-bold text-white">2. The Planets</h4>
+            <p class="text-xs text-slate-300 mt-2 line-clamp-3">There are 8 major planets orbiting the Sun in fixed pathways. They do not emit their own light.</p>
+            <span class="inline-block mt-3 text-xs text-blue-400 font-semibold hover:underline">Learn more &rarr;</span>
+          </div>
+
+          <!-- Member 3: Natural Satellites -->
+          <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-500/30 hover:border-slate-300 transition cursor-pointer" onclick="openMemberModal('moon')">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-3xl">🌙</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-600">Orbiting Planets</span>
+            </div>
+            <h4 class="text-lg font-bold text-white">3. Natural Satellites</h4>
+            <p class="text-xs text-slate-300 mt-2 line-clamp-3">The Moon is Earth's natural satellite. Natural celestial bodies that revolve around planets.</p>
+            <span class="inline-block mt-3 text-xs text-slate-400 font-semibold hover:underline">Learn more &rarr;</span>
+          </div>
+
+          <!-- Member 4: Asteroids -->
+          <div class="p-5 rounded-2xl bg-slate-900/80 border border-stone-500/30 hover:border-stone-400 transition cursor-pointer" onclick="openMemberModal('asteroid')">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-3xl">🪨</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-900/40 text-stone-300 border border-stone-600">Asteroid Belt</span>
+            </div>
+            <h4 class="text-lg font-bold text-white">4. Asteroids</h4>
+            <p class="text-xs text-slate-300 mt-2 line-clamp-3">Large rocky and metallic objects that orbit the Sun, mostly situated between Mars and Jupiter.</p>
+            <span class="inline-block mt-3 text-stone-400 font-semibold hover:underline">Learn more &rarr;</span>
+          </div>
+
+          <!-- Member 5: Meteoroids -->
+          <div class="p-5 rounded-2xl bg-slate-900/80 border border-orange-500/30 hover:border-orange-400 transition cursor-pointer" onclick="openMemberModal('meteoroid')">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-3xl">☄️</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-900/40 text-orange-300 border border-orange-500/40">Space Debris</span>
+            </div>
+            <h4 class="text-lg font-bold text-white">5. Meteoroids</h4>
+            <p class="text-xs text-slate-300 mt-2 line-clamp-3">Small pieces of rock or metal floating in outer space. They become meteors (shooting stars) when burning in Earth's atmosphere.</p>
+            <span class="inline-block mt-3 text-xs text-orange-400 font-semibold hover:underline">Learn more &rarr;</span>
+          </div>
+
+          <!-- Member 6: Comets -->
+          <div class="p-5 rounded-2xl bg-slate-900/80 border border-teal-500/30 hover:border-teal-400 transition cursor-pointer" onclick="openMemberModal('comet')">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-3xl">💫</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-900/40 text-teal-300 border border-teal-500/40">Icy & Glowing Tail</span>
+            </div>
+            <h4 class="text-lg font-bold text-white">6. Comets</h4>
+            <p class="text-xs text-slate-300 mt-2 line-clamp-3">Masses of frozen gas, ice, and dust orbiting the Sun. Their bright tails always point away from the Sun.</p>
+            <span class="inline-block mt-3 text-xs text-teal-400 font-semibold hover:underline">Learn more &rarr;</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cosmic-card rounded-3xl p-6 sm:p-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+          <div>
+            <div class="flex items-center gap-3">
+              <span class="px-3 py-1 bg-emerald-500/20 border border-emerald-400 text-emerald-300 rounded-full text-xs font-bold font-orbitron">PART 3</span>
+              <h3 class="text-xl sm:text-2xl font-bold text-emerald-300">Planets in Sequence from the Sun</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Arranged in order starting from closest to the Sun to the furthest</p>
+          </div>
+
+          <!-- English DLP Mnemonic Formula -->
+          <div class="bg-indigo-950/70 border border-indigo-500/30 rounded-2xl p-3 text-xs text-indigo-200">
+            <span class="font-bold text-yellow-300">💡 Cikgu Fareez's Mnemonic Formula:</span><br>
+            <span class="italic font-medium text-white">"<strong>M</strong>y <strong>V</strong>ery <strong>E</strong>ager <strong>M</strong>other <strong>J</strong>ust <strong>S</strong>erved <strong>U</strong>s <strong>N</strong>oodles"</span><br>
+            <span class="text-[11px] text-indigo-300/80">Mercury • Venus • Earth • Mars • Jupiter • Saturn • Uranus • Neptune</span>
+          </div>
+        </div>
+
+        <!-- Planet Sequence Cards Container (Populated by JS) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 pt-2" id="planets-sequence-cards"></div>
+
+        <div class="mt-6 p-4 rounded-2xl bg-slate-900/60 border border-slate-700/70 flex items-center justify-between flex-wrap gap-3">
+          <div class="text-xs text-slate-300">
+            💡 <strong class="text-white">Quick DLP Science Fact:</strong> Mercury is closest & smallest. Venus is the hottest. Jupiter is the largest planet. Neptune is the furthest and coldest planet!
+          </div>
+          <button onclick="awardXP(15, 'Read planet sequences!'); playSound('badge')" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5">
+            <span>🚀</span> Mark as Read & Collect +15 XP
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-games" class="space-y-8 hidden">
+      <!-- Games Header & Badge Progress -->
+      <div class="cosmic-card rounded-3xl p-6 sm:p-8">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <span class="px-3 py-1 bg-purple-500/20 border border-purple-400 text-purple-300 rounded-full text-xs font-bold font-orbitron">MISSION CONTROL</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Junior Astronaut Space Challenges</h2>
+            <p class="text-sm text-slate-300 mt-1">Complete interactive missions to collect XP points and unlock all 4 prestigious Cikgu Fareez Cadet Badges!</p>
+          </div>
+          <div class="flex gap-2">
+            <span id="badge-icon-1" class="text-3xl grayscale transition-all p-2 rounded-xl bg-slate-900/90 border border-slate-700" title="Badge 1: Solar Core Expert">☀️</span>
+            <span id="badge-icon-2" class="text-3xl grayscale transition-all p-2 rounded-xl bg-slate-900/90 border border-slate-700" title="Badge 2: Orbit Architect">🪐</span>
+            <span id="badge-icon-3" class="text-3xl grayscale transition-all p-2 rounded-xl bg-slate-900/90 border border-slate-700" title="Badge 3: Cosmic Classifier">☄️</span>
+            <span id="badge-icon-4" class="text-3xl grayscale transition-all p-2 rounded-xl bg-slate-900/90 border border-slate-700" title="Badge 4: Science DLP Master">🏆</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MISSION A: Sequence 8 Planets in Order from the Sun -->
+      <div class="cosmic-card rounded-3xl p-6 sm:p-8">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center">1</span>
+            <div>
+              <h3 class="text-lg sm:text-xl font-bold text-white">Mission A: Order 8 Planets in Sequence from the Sun</h3>
+              <p class="text-xs text-slate-400">Click the planets below in the correct order starting from the closest (1) to the furthest (8).</p>
+            </div>
+          </div>
+          <button onclick="resetMissionA()" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition">
+            🔄 Reset Mission
+          </button>
+        </div>
+
+        <!-- Drop slots container (1 to 8) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 my-6" id="mission-a-slots"></div>
+
+        <!-- Planet choices pool -->
+        <div class="p-4 rounded-2xl bg-slate-900/80 border border-dashed border-slate-700">
+          <p class="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+            <span>Planet Choices (Select in sequence):</span>
+            <span id="mission-a-turn-hint" class="text-amber-400 normal-case font-bold">Step: Pick Planet #1 (Closest to the Sun)</span>
+          </p>
+          <div class="flex flex-wrap gap-2.5 justify-center" id="mission-a-choices"></div>
+        </div>
+
+        <div id="mission-a-feedback" class="mt-4 hidden p-4 rounded-xl text-center font-bold text-sm"></div>
+      </div>
+
+      <!-- MISSION B: Cosmic Classifier -->
+      <div class="cosmic-card rounded-3xl p-6 sm:p-8">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center">2</span>
+            <div>
+              <h3 class="text-lg sm:text-xl font-bold text-white">Mission B: Cosmic Classifier</h3>
+              <p class="text-xs text-slate-400">Match each description or celestial object to its correct Solar System member category!</p>
+            </div>
+          </div>
+          <div class="text-xs font-bold text-amber-400 bg-amber-950/50 px-3 py-1.5 rounded-xl border border-amber-500/30">
+            Mission Score: <span id="mission-b-score">0</span> / 6
+          </div>
+        </div>
+
+        <div id="mission-b-card-area" class="my-6">
+          <div class="max-w-xl mx-auto p-6 rounded-2xl bg-gradient-to-b from-indigo-950/90 to-slate-900 border border-indigo-500/40 text-center shadow-xl">
+            <div id="mission-b-icon" class="text-5xl mb-3">🛸</div>
+            <h4 id="mission-b-clue" class="text-lg sm:text-xl font-bold text-white mb-2 leading-snug">Loading challenge...</h4>
+            <p id="mission-b-subtext" class="text-xs text-slate-300 mb-6">Which member category of the Solar System does this belong to?</p>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5" id="mission-b-options"></div>
+          </div>
+        </div>
+
+        <div id="mission-b-congrats" class="hidden text-center p-6 bg-emerald-950/40 border border-emerald-500/50 rounded-2xl space-y-3">
+          <div class="text-4xl">🎉</div>
+          <h4 class="text-xl font-bold text-emerald-300">Awesome! Cosmic Classifier Completed!</h4>
+          <p class="text-xs text-slate-200">You have proven exceptional understanding of all Solar System members.</p>
+          <button onclick="awardBadge(3, 'Cosmic Classifier'); switchTab('quiz')" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-sm shadow-lg hover:brightness-110 transition">
+            Proceed to Final Assessment (20 Questions) 📝
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-quiz" class="space-y-6 hidden">
+      <!-- Quiz Header -->
+      <div class="cosmic-card rounded-3xl p-6 sm:p-8">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-400 text-rose-300 text-xs font-bold font-orbitron">
+              SCIENCE DLP YEAR 3 ASSESSMENT
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Final Assessment Quiz (20 Questions)</h2>
+            <p class="text-sm text-slate-300 mt-1">Test your comprehensive knowledge on the Center of the Solar System, Members, and Planet Sequences.</p>
+          </div>
+
+          <!-- Live Score & Counter -->
+          <div class="flex items-center gap-4 bg-slate-900/90 border border-slate-700 p-3 rounded-2xl">
+            <div class="text-center">
+              <div class="text-[10px] uppercase font-bold text-slate-400">Question</div>
+              <div class="text-xl font-orbitron font-extrabold text-cyan-300"><span id="quiz-current-num">1</span>/20</div>
+            </div>
+            <div class="w-px h-8 bg-slate-700"></div>
+            <div class="text-center">
+              <div class="text-[10px] uppercase font-bold text-slate-400">Score</div>
+              <div class="text-xl font-orbitron font-extrabold text-amber-300"><span id="quiz-score">0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-slate-800 rounded-full h-2.5 mt-6 overflow-hidden">
+          <div id="quiz-progress-bar" class="bg-gradient-to-r from-cyan-500 to-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 5%"></div>
+        </div>
+      </div>
+
+      <!-- Active Quiz Card -->
+      <div id="quiz-card-container" class="cosmic-card rounded-3xl p-6 sm:p-8 min-h-[380px] flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span id="quiz-question-tag" class="text-xs px-2.5 py-1 rounded-md bg-blue-900/50 text-blue-300 border border-blue-500/30 font-semibold">
+              Category: Solar System
+            </span>
+            <span id="quiz-streak-tag" class="text-xs font-bold text-amber-400">🔥 Streak: <span id="quiz-streak">0</span></span>
+          </div>
+
+          <h3 id="quiz-question-text" class="text-lg sm:text-xl font-bold text-white mb-6 leading-relaxed">
+            Loading question...
+          </h3>
+
+          <div id="quiz-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+        </div>
+
+        <div id="quiz-explanation-box" class="hidden mt-6 p-4 rounded-2xl bg-slate-900/90 border text-sm">
+          <div id="quiz-feedback-title" class="font-bold flex items-center gap-2 mb-1"></div>
+          <p id="quiz-feedback-text" class="text-slate-300 text-xs sm:text-sm leading-relaxed"></p>
+          <div class="mt-4 flex justify-end">
+            <button id="quiz-next-btn" onclick="nextQuestion()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center gap-2">
+              <span>Next Question</span> &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="quiz-result-container" class="cosmic-card rounded-3xl p-6 sm:p-10 text-center hidden space-y-6">
+        <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-amber-400 to-yellow-500 flex items-center justify-center text-4xl shadow-xl shadow-amber-500/30">
+          🏆
+        </div>
+        <div class="space-y-2">
+          <span class="text-xs font-bold font-orbitron uppercase text-amber-400 tracking-widest">Virtual Science Lab Certificate of Achievement</span>
+          <h3 class="text-2xl sm:text-3xl font-extrabold text-white">Assessment Completed!</h3>
+          <p class="text-sm text-slate-300 max-w-lg mx-auto">Congratulations young astronomer! Here is your official performance evaluation for Science Year 3 Topic 9 (9.1.1):</p>
+        </div>
+
+        <div id="final-stats-summary" class="max-w-md mx-auto p-6 rounded-2xl bg-slate-900/90 border border-slate-700 shadow-inner flex items-center justify-around">
+          <div>
+            <div class="text-3xl sm:text-4xl font-black font-orbitron text-amber-400" id="final-score-val">0</div>
+            <div class="text-xs text-slate-400 uppercase font-semibold mt-1">Correct / 20</div>
+          </div>
+          <div class="w-px h-12 bg-slate-800"></div>
+          <div>
+            <div class="text-3xl sm:text-4xl font-black font-orbitron text-cyan-400" id="final-pct-val">0%</div>
+            <div class="text-xs text-slate-400 uppercase font-semibold mt-1">Percentage</div>
+          </div>
+          <div class="w-px h-12 bg-slate-800"></div>
+          <div>
+            <div class="text-2xl sm:text-3xl font-black font-orbitron text-emerald-400" id="final-grade-val">PL6</div>
+            <div class="text-xs text-slate-400 uppercase font-semibold mt-1">Performance Level</div>
+          </div>
+        </div>
+
+        <!-- Student Name Input field -->
+        <div id="cert-name-input-group" class="max-w-md mx-auto bg-slate-900/80 border border-slate-700 rounded-2xl p-4 text-center space-y-2">
+          <label for="student-name-input" class="block text-xs font-semibold text-slate-300">
+            ✍️ Enter Your Name for the Certificate & Scoreboard:
+          </label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="student-name-input" placeholder="e.g. NUR AISYAH HUMAIRA" maxlength="40" 
+              class="w-full text-center font-bold text-amber-300 bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition"
+              oninput="updateCertStudentName(this.value)" />
+          </div>
+          <div class="pt-2">
+            <button id="submit-scoreboard-btn" onclick="submitScoreToLeaderboard()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-black text-xs sm:text-sm shadow-lg hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-2">
+              <span>🚀</span> Submit Name & Score to Live Class Scoreboard!
+            </button>
+            <p id="submission-status-hint" class="text-[11px] text-slate-400 mt-1">Your teacher and classmates will be able to see your stellar achievement on the leaderboard.</p>
+          </div>
+        </div>
+
+        <!-- Student Certificate Template (Printable DOM element) -->
+        <div id="printable-certificate" class="max-w-2xl mx-auto p-6 sm:p-8 rounded-3xl border-4 border-double border-amber-400/70 bg-gradient-to-br from-indigo-950/90 via-slate-900 to-purple-950/90 text-left relative overflow-hidden shadow-2xl">
+          <div class="absolute -right-8 -top-8 w-28 h-28 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="text-center pb-4 border-b border-amber-500/30 cert-border">
+            <div class="text-3xl mb-1">🪐 ✨ 🚀</div>
+            <h4 class="font-orbitron font-extrabold text-amber-300 cert-gold-text text-lg sm:text-2xl tracking-wide">CERTIFICATE OF SCIENTIFIC EXCELLENCE</h4>
+            <p class="text-xs text-slate-300 cert-dark-text mt-1 font-medium">Virtual Science Lab Cikgu Fareez • Science DLP Year 3</p>
+          </div>
+          <div class="py-5 text-center space-y-3">
+            <p class="text-xs text-slate-300 cert-dark-text uppercase tracking-widest font-semibold">This certificate is proudly awarded to</p>
+            <p class="text-xl sm:text-3xl font-black text-cyan-300 cert-cyan-text underline underline-offset-8 decoration-amber-400 font-orbitron tracking-wider" id="cert-student-name">
+              CADET SPACE EXPLORER
+            </p>
+            <p class="text-xs sm:text-sm text-slate-300 cert-dark-text max-w-lg mx-auto pt-2 leading-relaxed">
+              For demonstrating stellar scientific knowledge in <strong class="text-amber-300 cert-gold-text">Topic 9: Solar System</strong> (Objective 9.1.1: Listing the Members of the Solar System & Sequence of Planets).
+            </p>
+            <div class="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-slate-900/80 border border-amber-400/40 text-xs font-bold text-amber-300 cert-gold-text cert-border">
+              <span>Final Score: <span id="cert-score-display">20/20</span></span>
+              <span>•</span>
+              <span id="cert-pl-display">PL6 (Exemplary)</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-4 border-t border-slate-700/80 cert-border text-xs text-slate-400 cert-dark-text">
+            <div>
+              <span class="font-bold text-slate-300 cert-dark-text">Awarded Date:</span> <br>
+              <span id="cert-date" class="font-semibold text-slate-200 cert-dark-text">October 2, 2026</span>
+            </div>
+            <div class="text-center">
+              <span class="text-xl">🎖️</span><br>
+              <span class="text-[10px] text-amber-400 cert-gold-text font-bold uppercase tracking-wider">Official Stamp</span>
+            </div>
+            <div class="text-right">
+              <span class="font-bold text-amber-300 cert-gold-text text-sm">Cikgu Fareez</span><br>
+              <span class="text-[11px] text-slate-400 cert-dark-text">Science DLP Lead Educator</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Download, Native Mobile Share, and Print Actions -->
+        <div class="flex flex-wrap justify-center gap-3 pt-4">
+          <button onclick="downloadCertificatePNG()" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-xl hover:brightness-110 active:scale-95 transition flex items-center gap-2">
+            <span class="text-base">📥</span> Download Certificate (HD Image)
+          </button>
+          <button id="mobile-share-btn" onclick="shareCertificateNative()" class="px-5 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs sm:text-sm shadow-md active:scale-95 transition flex items-center gap-2 border border-purple-400/30">
+            <span class="text-base">📲</span> Save / Share to Photos (Mobile)
+          </button>
+          <button onclick="printCertificate()" class="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm shadow-md active:scale-95 transition flex items-center gap-2 border border-blue-400/30">
+            <span class="text-base">🖨️</span> Print / Save PDF
+          </button>
+          <button onclick="downloadCertificateHTML()" class="px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs sm:text-sm border border-slate-600 transition flex items-center gap-2">
+            <span class="text-base">📄</span> Save HTML File
+          </button>
+          <button onclick="restartQuiz()" class="px-4 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-400 font-semibold text-xs sm:text-sm border border-slate-700 transition">
+            🔄 Retake Quiz
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: LIVE SCOREBOARD & TEACHER DASHBOARD -->
+    <section id="section-scoreboard" class="space-y-6 hidden">
+      <!-- Scoreboard Header & Class Overview -->
+      <div class="cosmic-card rounded-3xl p-6 sm:p-8">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-bold font-orbitron">
+              <span>🏆</span> LIVE CLASSROOM LEADERBOARD
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Space Cadets Hall of Fame</h2>
+            <p class="text-sm text-slate-300 mt-1">
+              Live tracking for Cikgu Fareez's Year 3 Science DLP pupils. Real-time evaluation of Solar System mastery.
+            </p>
+          </div>
+
+          <!-- Live Status & Refresh Button -->
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/90 border border-emerald-500/40 text-emerald-400 text-xs font-semibold">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span>Live Cloud Active</span>
+            </div>
+            <button onclick="refreshScoreboardData()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition" title="Refresh Board">
+              🔄
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Summary Stats Bar for Teacher -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Submissions</span>
+            <div id="stat-total-pupils" class="text-2xl sm:text-3xl font-black font-orbitron text-cyan-300 mt-1">0</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Average Score</span>
+            <div id="stat-avg-score" class="text-2xl sm:text-3xl font-black font-orbitron text-amber-300 mt-1">0 / 20</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Highest Score</span>
+            <div id="stat-high-score" class="text-2xl sm:text-3xl font-black font-orbitron text-emerald-400 mt-1">0</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PL6 Exemplary</span>
+            <div id="stat-pl6-count" class="text-2xl sm:text-3xl font-black font-orbitron text-purple-400 mt-1">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top 3 Podium Highlights -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="top-podium-container">
+        <!-- Rendered dynamically: 1st, 2nd, and 3rd place cards -->
+      </div>
+
+      <!-- Main Scoreboard Table & Teacher Actions -->
+      <div class="cosmic-card rounded-3xl p-6 sm:p-8 space-y-5">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <!-- Search filter for teacher -->
+          <div class="relative w-full sm:w-72">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-sm">🔍</span>
+            <input type="text" id="scoreboard-search-input" placeholder="Search pupil's name..." 
+              class="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-slate-700 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400 transition"
+              oninput="filterScoreboardTable(this.value)" />
+          </div>
+
+          <!-- Teacher Export & Management Buttons -->
+          <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+            <button onclick="copyScoresToClipboard()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 transition flex items-center gap-1.5" title="Copy table to paste in Excel / Google Sheets">
+              <span>📋</span> Copy for Excel / Google Sheets
+            </button>
+            <button onclick="exportScoresCSV()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5">
+              <span>📥</span> Export CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Submissions Table -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-800">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-900/95 text-slate-400 font-orbitron uppercase text-[10px] sm:text-xs tracking-wider border-b border-slate-800">
+                <th class="py-3.5 px-4 text-center">Rank</th>
+                <th class="py-3.5 px-4">Cadet Name</th>
+                <th class="py-3.5 px-4 text-center">Score / 20</th>
+                <th class="py-3.5 px-4 text-center">Percentage</th>
+                <th class="py-3.5 px-4 text-center">Level (PL)</th>
+                <th class="py-3.5 px-4 text-center">Date & Time</th>
+              </tr>
+            </thead>
+            <tbody id="scoreboard-table-body" class="divide-y divide-slate-800/60 bg-slate-950/40">
+              <tr>
+                <td colspan="6" class="py-8 text-center text-slate-400">
+                  <div class="text-3xl mb-2">🪐</div>
+                  No submissions yet. Complete the 20-question quiz in Tab 3 to appear here!
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL: Detailed Member Info -->
+  <div id="member-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden">
+    <div class="bg-slate-900 border border-slate-700 max-w-lg w-full rounded-3xl p-6 sm:p-7 relative shadow-2xl space-y-4">
+      <button onclick="closeMemberModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center font-bold">
+        ✕
+      </button>
+      <div class="flex items-center gap-3">
+        <div id="modal-icon" class="text-4xl p-2 rounded-2xl bg-slate-800 border border-slate-700">☀️</div>
+        <div>
+          <h3 id="modal-title" class="text-xl font-bold text-white">The Sun</h3>
+          <span id="modal-subtitle" class="text-xs text-amber-400 font-medium">Center of the Solar System</span>
+        </div>
+      </div>
+      <div id="modal-body" class="text-sm text-slate-300 space-y-2 leading-relaxed"></div>
+      <div class="pt-2 flex justify-end">
+        <button onclick="closeMemberModal()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs">
+          Close Note
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Badges Collection Showcase -->
+  <div id="badges-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden">
+    <div class="bg-slate-900 border border-slate-700 max-w-md w-full rounded-3xl p-6 relative shadow-2xl space-y-4">
+      <button onclick="toggleBadgesModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center font-bold">
+        ✕
+      </button>
+      <div class="text-center pb-2">
+        <h3 class="text-xl font-bold text-white">Astronaut Badges Collection</h3>
+        <p class="text-xs text-slate-400">Unlock all 4 honorary badges from Cikgu Fareez's Lab!</p>
+      </div>
+      <div class="space-y-3" id="badges-list-container"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: Certificate HD Image Preview & Direct Mobile Tap-and-Hold -->
+  <div id="cert-preview-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/90 backdrop-blur-md hidden">
+    <div class="bg-slate-900 border border-amber-500/50 max-w-3xl w-full rounded-3xl p-4 sm:p-6 relative shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+      <button onclick="closeCertPreviewModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center font-bold border border-slate-600 transition">
+        ✕
+      </button>
+      <div class="text-center">
+        <span class="text-xs uppercase font-bold text-amber-400 tracking-wider font-orbitron">Virtual Science Lab Cikgu Fareez</span>
+        <h3 class="text-lg sm:text-xl font-bold text-white mt-1">Official Science Certificate Ready! 🎉</h3>
+        <p class="text-xs text-amber-300 font-semibold mt-1">
+          📱 Mobile / Phone Tip: <u>Press and hold</u> (tekan & tahan jari) on the certificate picture below to select <strong>"Save Image"</strong> or <strong>"Download Image"</strong>!
+        </p>
+      </div>
+
+      <div class="rounded-2xl border-2 border-amber-500/40 overflow-hidden bg-slate-950 flex flex-col items-center justify-center p-2 shadow-inner">
+        <img id="cert-preview-img" src="" alt="Certificate of Scientific Excellence" class="w-full h-auto max-h-[55vh] object-contain rounded-xl shadow-lg select-auto cursor-pointer" />
+        <span class="text-[11px] text-slate-400 mt-2">👆 Tekan lama pada gambar di atas untuk simpan terus ke album telefon</span>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+        <div class="text-left text-[11px] text-slate-400">
+          💡 <em>Tip: You can upload this certificate to Google Classroom or send it to teacher!</em>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="modal-share-btn" onclick="shareCertificateNative()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5">
+            <span>📲</span> Save to Photos / Share
+          </button>
+          <a id="cert-modal-download-btn" href="#" download="Cikgu_Fareez_Solar_System_Certificate.png" target="_blank" onclick="showToast('Saving certificate image... 💾', '🎉')" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold text-xs shadow-md hover:brightness-110 transition flex items-center gap-1.5">
+            <span>📥</span> Direct Download
+          </a>
+          <button onclick="closeCertPreviewModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-600">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Box -->
+  <div id="toast-box" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-2xl bg-indigo-900/90 border border-indigo-400 text-white text-xs sm:text-sm font-semibold shadow-2xl flex items-center gap-2">
+    <span id="toast-icon">🚀</span>
+    <span id="toast-msg">Notification</span>
+  </div>
+
+  <script>
+    /* State management */
+    const state = {
+      xp: 0,
+      badges: {
+        1: { title: "Solar Core Expert", desc: "Mastered facts about the Sun as the center of the Solar System", icon: "☀️", unlocked: false },
+        2: { title: "Orbit Architect", desc: "Successfully arranged all 8 planets in correct order from the Sun", icon: "🪐", unlocked: false },
+        3: { title: "Cosmic Classifier", desc: "Completed the Solar System classification challenge in Mission B", icon: "☄️", unlocked: false },
+        4: { title: "Science DLP Master", desc: "Achieved a stellar score of 16/20 or above in the Final Assessment", icon: "🏆", unlocked: false }
+      },
+      currentTab: 'notes',
+      missionA: {
+        step: 0,
+        slots: Array(8).fill(null),
+        completed: false
+      },
+      missionB: {
+        currentIndex: 0,
+        score: 0,
+        completed: false
+      },
+      quiz: {
+        currentIndex: 0,
+        score: 0,
+        streak: 0,
+        answered: false
+      },
+      scoreboard: {
+        allEntries: [],
+        filteredEntries: [],
+        hasSubmittedCurrent: false
+      }
+    };
+
+    /* 8 Planets Data in Sequence from the Sun */
+    const planetsData = [
+      { id: 1, name: "Mercury", msName: "Utarid", icon: "⚪", color: "from-stone-400 to-stone-600", tag: "Closest & Smallest", desc: "The planet closest to the Sun and the smallest planet in our Solar System. Its surface is rocky and full of craters like the Moon." },
+      { id: 2, name: "Venus", msName: "Zuhrah", icon: "🟡", color: "from-amber-200 to-yellow-600", tag: "Hottest Planet", desc: "The second planet from the Sun. It is the hottest planet because its thick carbon dioxide atmosphere traps intense solar heat." },
+      { id: 3, name: "Earth", msName: "Bumi", icon: "🌍", color: "from-blue-400 to-emerald-500", tag: "Supports Life", desc: "The third planet from the Sun. The only planet known to have liquid water, air (oxygen), and living things (humans, animals, and plants)." },
+      { id: 4, name: "Mars", msName: "Marikh", icon: "🔴", color: "from-red-500 to-amber-700", tag: "Red Planet", desc: "The fourth planet from the Sun. Known as the 'Red Planet' due to reddish iron oxide dust across its surface." },
+      { id: 5, name: "Jupiter", msName: "Musytari", icon: "🟠", color: "from-amber-600 to-orange-700", tag: "Largest Planet", desc: "The fifth planet from the Sun and the largest planet in our entire Solar System. Famous for its Giant Red Spot storm." },
+      { id: 6, name: "Saturn", msName: "Zuhal", icon: "🪐", color: "from-yellow-500 to-amber-600", tag: "Beautiful Rings", desc: "The sixth planet from the Sun. Famous for its spectacular, wide rings made of chunks of ice and rocky debris." },
+      { id: 7, name: "Uranus", msName: "Uranus", icon: "🧊", color: "from-cyan-400 to-teal-500", tag: "Rotates on Its Side", desc: "The seventh planet from the Sun. An icy giant that appears blue-green due to methane gas and uniquely rotates tilted on its side." },
+      { id: 8, name: "Neptune", msName: "Neptun", icon: "🔵", color: "from-blue-600 to-indigo-800", tag: "Furthest & Coldest", desc: "The eighth and furthest planet from the Sun. Very dark, cold, windy, and takes the longest time to orbit the Sun." }
+    ];
+
+    /* Detailed Members data for Modals in English DLP */
+    const membersDetail = {
+      sun: {
+        title: "The Sun",
+        subtitle: "The Center of the Solar System",
+        icon: "☀️",
+        text: `
+          <p>• <strong>Position:</strong> Located right at the center of the Solar System.</p>
+          <p>• <strong>Nature:</strong> A gigantic glowing ball of hot gas (a star).</p>
+          <p>• <strong>Role:</strong> The main source of light and heat energy for Earth and all other members.</p>
+          <p>• <strong>Gravity:</strong> Its immense gravitational pull keeps all planets in their orderly orbits without drifting away.</p>
+        `
+      },
+      planets: {
+        title: "The 8 Planets",
+        subtitle: "Orbiting around the Sun",
+        icon: "🪐",
+        text: `
+          <p>• There are <strong>8 major planets</strong> in the Solar System.</p>
+          <p>• <strong>Sequence from the Sun:</strong> Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune.</p>
+          <p>• Planets <strong>do not produce their own light</strong>; they only reflect sunlight.</p>
+          <p>• Each planet has a unique size, atmospheric temperature, and length of orbit.</p>
+        `
+      },
+      moon: {
+        title: "Natural Satellites (Moons)",
+        subtitle: "Planetary Companions",
+        icon: "🌙",
+        text: `
+          <p>• <strong>Definition:</strong> Natural celestial bodies that revolve around planets.</p>
+          <p>• <strong>The Moon:</strong> Earth's only natural satellite.</p>
+          <p>• Other planets like Jupiter and Saturn have dozens of natural satellites!</p>
+          <p>• Like planets, moons do not emit their own light; they reflect sunlight back to us.</p>
+        `
+      },
+      asteroid: {
+        title: "Asteroids",
+        subtitle: "Rocky & Metallic Space Objects",
+        icon: "🪨",
+        text: `
+          <p>• <strong>Definition:</strong> Large pieces of rock and metal that revolve around the Sun.</p>
+          <p>• <strong>Asteroid Belt:</strong> Most asteroids congregate in a belt between the orbits of <strong>Mars and Jupiter</strong>.</p>
+          <p>• They are smaller than planets but larger than meteoroids.</p>
+        `
+      },
+      meteoroid: {
+        title: "Meteoroids",
+        subtitle: "Floating Rock & Metal Fragments",
+        icon: "☄️",
+        text: `
+          <p>• <strong>Definition:</strong> Small fragments of rock or metal floating and travelling through space.</p>
+          <p>• <strong>Meteor (Shooting Star):</strong> When a meteoroid enters Earth's atmosphere and burns up due to friction, creating a glowing streak of light.</p>
+          <p>• <strong>Meteorite:</strong> When a piece does not completely burn up and crashes onto Earth's surface.</p>
+        `
+      },
+      comet: {
+        title: "Comets",
+        subtitle: "Frozen Gas, Ice & Dust with Glowing Tails",
+        icon: "💫",
+        text: `
+          <p>• <strong>Definition:</strong> Bodies composed of ice, frozen gases, and cosmic dust travelling in elongated orbits.</p>
+          <p>• <strong>Glowing Tail:</strong> As a comet nears the Sun, heat evaporates its ice, creating a spectacular tail of glowing gas and dust.</p>
+          <p>• The tail <strong>always points away from the Sun</strong> due to the push of solar winds.</p>
+        `
+      }
+    };
+
+    const missionBData = [
+      {
+        icon: "☀️",
+        clue: "A massive glowing object located at the center of the Solar System that emits its own light and heat.",
+        answer: "The Sun",
+        options: ["The Sun", "Planet", "Natural Satellite", "Comet"]
+      },
+      {
+        icon: "🌍",
+        clue: "Spherical bodies that travel in fixed orbits around the Sun, such as Earth, Mars, and Jupiter.",
+        answer: "Planet",
+        options: ["Planet", "Natural Satellite", "Asteroid", "Meteoroid"]
+      },
+      {
+        icon: "🌙",
+        clue: "A natural celestial object that revolves around a planet, such as the Moon revolving around Earth.",
+        answer: "Natural Satellite",
+        options: ["Natural Satellite", "Asteroid", "Comet", "The Sun"]
+      },
+      {
+        icon: "🪨",
+        clue: "Rocky and metallic bodies mainly found traveling in a belt between Mars and Jupiter.",
+        answer: "Asteroid",
+        options: ["Asteroid", "Planet", "The Moon", "Comet"]
+      },
+      {
+        icon: "💫",
+        clue: "A lump of ice, frozen gases, and dust that forms a long glowing tail pointing away from the Sun.",
+        answer: "Comet",
+        options: ["Comet", "Meteoroid", "Asteroid", "Planet"]
+      },
+      {
+        icon: "☄️",
+        clue: "Small space rock fragments that create 'shooting stars' (meteors) when burning up in Earth's atmosphere.",
+        answer: "Meteoroid",
+        options: ["Meteoroid", "Comet", "The Moon", "The Sun"]
+      }
+    ];
+
+    const quizQuestions = [
+      {
+        id: 1,
+        tag: "Center of Solar System",
+        q: "Which celestial object is located right at the center of the Solar System?",
+        choices: ["Earth", "The Sun", "The Moon", "Jupiter"],
+        ans: 1,
+        exp: "The Sun is located at the center of the Solar System, and all other members orbit around it."
+      },
+      {
+        id: 2,
+        tag: "Members of Solar System",
+        q: "Which of the following is NOT a natural member of the Solar System?",
+        choices: ["Planet", "Comet", "Artificial Satellite (Spaceship)", "Asteroid"],
+        ans: 2,
+        exp: "Artificial satellites and spaceships are man-made. The natural members are the Sun, 8 Planets, Natural Satellites, Asteroids, Meteoroids, and Comets."
+      },
+      {
+        id: 3,
+        tag: "Number of Planets",
+        q: "How many major planets are there in our Solar System orbiting the Sun?",
+        choices: ["7 planets", "8 planets", "9 planets", "10 planets"],
+        ans: 1,
+        exp: "There are 8 official planets in the Solar System, starting from Mercury to Neptune."
+      },
+      {
+        id: 4,
+        tag: "Planets in Sequence",
+        q: "Which planet is CLOSEST to the Sun?",
+        choices: ["Earth", "Venus", "Mercury", "Mars"],
+        ans: 2,
+        exp: "Mercury is the first planet and closest in distance to the Sun."
+      },
+      {
+        id: 5,
+        tag: "Planets in Sequence",
+        q: "Which planet is in the THIRD position from the Sun and has living things?",
+        choices: ["Earth", "Mars", "Jupiter", "Venus"],
+        ans: 0,
+        exp: "Earth is the third planet from the Sun and the only one known to sustain life."
+      },
+      {
+        id: 6,
+        tag: "Planet Sizes",
+        q: "Which planet is the LARGEST in size in the entire Solar System?",
+        choices: ["Saturn", "Earth", "Jupiter", "Neptune"],
+        ans: 2,
+        exp: "Jupiter is a gas giant and the largest planet in our Solar System."
+      },
+      {
+        id: 7,
+        tag: "Planets in Sequence",
+        q: "Which planet is the FURTHEST away from the Sun?",
+        choices: ["Uranus", "Neptune", "Mars", "Saturn"],
+        ans: 1,
+        exp: "Neptune is the eighth and furthest planet from the Sun."
+      },
+      {
+        id: 8,
+        tag: "Natural Satellites",
+        q: "What is the name of the natural satellite that revolves around planet Earth?",
+        choices: ["The Sun", "The Moon", "Halley's Comet", "Polaris"],
+        ans: 1,
+        exp: "The Moon is Earth's only natural satellite."
+      },
+      {
+        id: 9,
+        tag: "Planet Temperatures",
+        q: "Why is Venus the HOTTEST planet in the Solar System?",
+        choices: [
+          "Because Venus is the closest to the Sun",
+          "Because its thick atmosphere of carbon dioxide traps intense heat",
+          "Because Venus is made of burning fire",
+          "Because it is the smallest planet"
+        ],
+        ans: 1,
+        exp: "Although Mercury is closer, Venus is hotter due to an extreme greenhouse effect from its dense carbon dioxide atmosphere."
+      },
+      {
+        id: 10,
+        tag: "Characteristics of Comets",
+        q: "Comets are made of ice, gas, and dust. Which direction does a comet's tail point?",
+        choices: [
+          "Always towards the Sun",
+          "Always away from the Sun",
+          "Always towards Earth",
+          "It curls in a circle"
+        ],
+        ans: 1,
+        exp: "Solar winds push against the evaporating dust and gas, causing the comet's tail to always point away from the Sun."
+      },
+      {
+        id: 11,
+        tag: "Asteroid Belt",
+        q: "The Asteroid Belt is located mainly between the orbits of which two planets?",
+        choices: [
+          "Earth and Mars",
+          "Mars and Jupiter",
+          "Jupiter and Saturn",
+          "Mercury and Venus"
+        ],
+        ans: 1,
+        exp: "The Asteroid Belt lies between the orbits of the rocky planet Mars and the gas giant Jupiter."
+      },
+      {
+        id: 12,
+        tag: "Meteoroids & Meteors",
+        q: "What happens when a meteoroid enters Earth's atmosphere and burns up due to friction?",
+        choices: [
+          "It creates a streak of light called a meteor (shooting star)",
+          "It forms a brand new planet",
+          "It turns into a comet with ice",
+          "It creates planetary rings around Earth"
+        ],
+        ans: 0,
+        exp: "A meteoroid burning in Earth's atmosphere produces a luminous streak of light called a meteor or shooting star."
+      },
+      {
+        id: 13,
+        tag: "Saturn's Characteristics",
+        q: "The sixth planet from the Sun, famous for its magnificent and prominent ring system, is...",
+        choices: ["Uranus", "Saturn", "Neptune", "Mars"],
+        ans: 1,
+        exp: "Saturn is widely known for its stunning and extensive ring system made of ice and rock particles."
+      },
+      {
+        id: 14,
+        tag: "Planet Sequence",
+        q: "Arrange the first 4 planets in the correct order starting closest from the Sun:",
+        choices: [
+          "Mercury -> Venus -> Earth -> Mars",
+          "Venus -> Mercury -> Earth -> Mars",
+          "Earth -> Mercury -> Venus -> Mars",
+          "Mercury -> Earth -> Venus -> Mars"
+        ],
+        ans: 0,
+        exp: "The first four terrestrial (rocky) planets are Mercury, Venus, Earth, and Mars."
+      },
+      {
+        id: 15,
+        tag: "Light & Energy",
+        q: "Which object in the Solar System EMITS its own light and heat?",
+        choices: ["The Moon", "Earth", "The Sun", "Comet"],
+        ans: 2,
+        exp: "Only the Sun (a star) produces and emits its own light and heat. Planets and moons only reflect sunlight."
+      },
+      {
+        id: 16,
+        tag: "Planet Mars",
+        q: "Mars is often nicknamed by scientists as the...",
+        choices: ["Blue Planet", "Red Planet", "Ringed Planet", "Ice Planet"],
+        ans: 1,
+        exp: "Mars is known as the 'Red Planet' because iron minerals in its soil oxidize (rust), making the surface look red."
+      },
+      {
+        id: 17,
+        tag: "Planetary Pathways",
+        q: "The curved, imaginary pathway that a planet travels on around the Sun is called an...",
+        choices: ["Tunnel", "Orbit", "Equator", "Compass"],
+        ans: 1,
+        exp: "An orbit is the regular, elliptical pathway that a planet follows as it revolves around the Sun."
+      },
+      {
+        id: 18,
+        tag: "Orbital Period",
+        q: "Which planet takes the LONGEST time to make one complete revolution around the Sun?",
+        choices: ["Mercury", "Earth", "Jupiter", "Neptune"],
+        ans: 3,
+        exp: "Because Neptune has the largest orbit and is furthest from the Sun, it takes the longest time (about 165 Earth years) to orbit the Sun."
+      },
+      {
+        id: 19,
+        tag: "Solar System Members",
+        q: "Large rocky or metallic objects orbiting the Sun, smaller than planets, are called...",
+        choices: ["Asteroids", "Meteorites", "Artificial Satellites", "Moons"],
+        ans: 0,
+        exp: "Asteroids are large rocky and metallic bodies orbiting the Sun."
+      },
+      {
+        id: 20,
+        tag: "Planet Sequence",
+        q: "Which planet is situated between Saturn and Neptune?",
+        choices: ["Jupiter", "Mars", "Uranus", "Earth"],
+        ans: 2,
+        exp: "In sequence: Jupiter (#5), Saturn (#6), Uranus (#7), and Neptune (#8)."
+      }
+    ];
+
+    function renderPlanetsSequence() {
+      const container = document.getElementById('planets-sequence-cards');
+      if (!container) return;
+      container.innerHTML = planetsData.map((p, idx) => `
+        <div onclick="openPlanetModal(${p.id})" class="cosmic-card p-3 rounded-2xl flex flex-col items-center text-center hover:scale-105 transition-all duration-200 cursor-pointer border border-slate-700/60 hover:border-cyan-400 group">
+          <span class="text-xs font-bold text-slate-400 mb-1">#${idx + 1}</span>
+          <div class="w-12 h-12 rounded-full bg-gradient-to-tr ${p.color} flex items-center justify-center text-2xl mb-2 shadow-md group-hover:rotate-12 transition">
+            ${p.icon}
+          </div>
+          <div class="font-bold text-sm text-white">${p.name}</div>
+          <div class="text-[10px] text-slate-400 font-medium">${p.msName}</div>
+          <div class="mt-2 text-[9px] px-1.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 border border-slate-700">
+            ${p.tag}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function switchTab(tabId) {
+      playSound('click');
+      state.currentTab = tabId;
+      const tabs = ['notes', 'games', 'quiz', 'scoreboard'];
+      tabs.forEach(t => {
+        const sec = document.getElementById(`section-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (!sec || !btn) return;
+        if (t === tabId) {
+          sec.classList.remove('hidden');
+          sec.classList.add('block');
+          btn.className = "tab-btn flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25";
+        } else {
+          sec.classList.add('hidden');
+          sec.classList.remove('block');
+          btn.className = "tab-btn flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all duration-200 bg-slate-800/80 hover:bg-slate-700 text-slate-300";
+        }
+      });
+      if (tabId === 'scoreboard') {
+        renderScoreboardUI();
+      }
+      window.scrollTo({ top: 100, behavior: 'smooth' });
+    }
+
+    function awardXP(amount, reason = "") {
+      state.xp += amount;
+      document.getElementById('stat-xp').innerText = state.xp;
+      showToast(`+${amount} XP! ${reason}`, "⭐");
+    }
+
+    function awardBadge(id, title) {
+      if (state.badges[id] && !state.badges[id].unlocked) {
+        state.badges[id].unlocked = true;
+        playSound('badge');
+        awardXP(50, `Badge Unlocked: ${title}`);
+        
+        const count = Object.values(state.badges).filter(b => b.unlocked).length;
+        document.getElementById('stat-badges').innerText = `${count}/4`;
+        
+        const iconEl = document.getElementById(`badge-icon-${id}`);
+        if (iconEl) {
+          iconEl.classList.remove('grayscale');
+          iconEl.classList.add('border-amber-400', 'bg-amber-950/60');
+        }
+
+        confetti({
+          particleCount: 60,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+        showToast(`🎉 Congrats! You earned the '${title}' badge!`, "🎖");
+      }
+    }
+
+    let toastTimeout;
+    function showToast(msg, icon = "🚀") {
+      const box = document.getElementById('toast-box');
+      const msgEl = document.getElementById('toast-msg');
+      const iconEl = document.getElementById('toast-icon');
+      msgEl.innerText = msg;
+      iconEl.innerText = icon;
+      box.classList.remove('translate-y-20', 'opacity-0');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        box.classList.add('translate-y-20', 'opacity-0');
+      }, 3200);
+    }
+
+    function initMissionA() {
+      state.missionA.step = 0;
+      state.missionA.slots = Array(8).fill(null);
+      state.missionA.completed = false;
+      
+      const slotsContainer = document.getElementById('mission-a-slots');
+      slotsContainer.innerHTML = '';
+      for (let i = 0; i < 8; i++) {
+        const slot = document.createElement('div');
+        slot.id = `slot-${i}`;
+        slot.className = "p-3 rounded-2xl bg-slate-900/60 border-2 border-dashed border-slate-700 flex flex-col items-center justify-center min-h-[105px] text-center transition";
+        slot.innerHTML = `
+          <span class="text-xs text-slate-500 font-bold mb-1">Slot #${i + 1}</span>
+          <span class="text-2xl opacity-30">❓</span>
+          <span class="text-[10px] text-slate-500 mt-1">Empty</span>
+        `;
+        slotsContainer.appendChild(slot);
+      }
+
+      renderMissionAChoices();
+      updateMissionAHint();
+      document.getElementById('mission-a-feedback').classList.add('hidden');
+    }
+
+    function renderMissionAChoices() {
+      const choicesContainer = document.getElementById('mission-a-choices');
+      choicesContainer.innerHTML = '';
+      const shuffled = [...planetsData].sort(() => Math.random() - 0.5);
+
+      shuffled.forEach(planet => {
+        const btn = document.createElement('button');
+        btn.id = `choice-btn-${planet.id}`;
+        btn.onclick = () => selectPlanetForSequence(planet);
+        btn.className = "flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-white transition hover:scale-105 active:scale-95";
+        btn.innerHTML = `
+          <span>${planet.icon}</span>
+          <span>${planet.name}</span>
+        `;
+        choicesContainer.appendChild(btn);
+      });
+    }
+
+    function updateMissionAHint() {
+      const hint = document.getElementById('mission-a-turn-hint');
+      if (state.missionA.step < 8) {
+        hint.innerHTML = `Step: Choose Planet #${state.missionA.step + 1} in order from the Sun`;
+      } else {
+        hint.innerHTML = `All 8 planets are successfully aligned in orbit! 🌟`;
+      }
+    }
+
+    function selectPlanetForSequence(planet) {
+      if (state.missionA.completed) return;
+      const expectedPlanet = planetsData[state.missionA.step];
+      const slotEl = document.getElementById(`slot-${state.missionA.step}`);
+
+      if (planet.id === expectedPlanet.id) {
+        playSound('correct');
+        awardXP(15, `Planet ${planet.name} aligned!`);
+        
+        slotEl.className = "p-3 rounded-2xl bg-gradient-to-tr from-slate-900 to-indigo-950 border-2 border-emerald-500 flex flex-col items-center justify-center min-h-[105px] text-center shadow-lg transition";
+        slotEl.innerHTML = `
+          <span class="text-[10px] text-emerald-400 font-bold mb-1">#${state.missionA.step + 1} Correct</span>
+          <span class="text-2xl">${planet.icon}</span>
+          <span class="text-xs font-bold text-white mt-1">${planet.name}</span>
+        `;
+
+        const btn = document.getElementById(`choice-btn-${planet.id}`);
+        if (btn) {
+          btn.disabled = true;
+          btn.classList.add('opacity-30', 'pointer-events-none', 'bg-slate-900');
+        }
+
+        state.missionA.step++;
+        updateMissionAHint();
+
+        if (state.missionA.step === 8) {
+          state.missionA.completed = true;
+          awardBadge(2, "Orbit Architect");
+          const fb = document.getElementById('mission-a-feedback');
+          fb.classList.remove('hidden');
+          fb.className = "mt-4 p-4 rounded-xl text-center font-bold text-sm bg-emerald-950/70 border border-emerald-500 text-emerald-300";
+          fb.innerHTML = `🎉 Superb! You accurately aligned all 8 planets from the Sun! (+50 XP)`;
+        }
+      } else {
+        playSound('wrong');
+        slotEl.classList.add('border-red-500', 'bg-red-950/30');
+        setTimeout(() => {
+          slotEl.classList.remove('border-red-500', 'bg-red-950/30');
+        }, 600);
+        showToast(`Not ${planet.name}! Remember: "My Very Eager Mother Just Served Us Noodles"`, "❌");
+      }
+    }
+
+    function resetMissionA() {
+      playSound('click');
+      initMissionA();
+    }
+
+    function loadMissionBCard() {
+      if (state.missionB.currentIndex >= missionBData.length) {
+        document.getElementById('mission-b-card-area').classList.add('hidden');
+        document.getElementById('mission-b-congrats').classList.remove('hidden');
+        return;
+      }
+
+      const item = missionBData[state.missionB.currentIndex];
+      document.getElementById('mission-b-icon').innerText = item.icon;
+      document.getElementById('mission-b-clue').innerText = `"${item.clue}"`;
+
+      const optContainer = document.getElementById('mission-b-options');
+      optContainer.innerHTML = '';
+
+      item.options.forEach(opt => {
+        const b = document.createElement('button');
+        b.onclick = () => checkMissionBAnswer(opt);
+        b.className = "py-3 px-4 rounded-xl bg-slate-800 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm border border-slate-600 transition hover:scale-105 active:scale-95";
+        b.innerText = opt;
+        optContainer.appendChild(b);
+      });
+    }
+
+    function checkMissionBAnswer(chosen) {
+      const item = missionBData[state.missionB.currentIndex];
+      if (chosen === item.answer) {
+        playSound('correct');
+        state.missionB.score++;
+        document.getElementById('mission-b-score').innerText = state.missionB.score;
+        awardXP(15, `Classified: ${chosen}`);
+        showToast(`Exactly right! That is ${chosen}.`, "✅");
+      } else {
+        playSound('wrong');
+        showToast(`Not quite. The correct member is ${item.answer}.`, "ℹ️");
+      }
+
+      state.missionB.currentIndex++;
+      setTimeout(loadMissionBCard, 600);
+    }
+
+    function renderCurrentQuizQuestion() {
+      const q = quizQuestions[state.quiz.currentIndex];
+      state.quiz.answered = false;
+
+      document.getElementById('quiz-current-num').innerText = state.quiz.currentIndex + 1;
+      document.getElementById('quiz-score').innerText = state.quiz.score;
+      document.getElementById('quiz-streak').innerText = state.quiz.streak;
+      document.getElementById('quiz-question-tag').innerText = `Category: ${q.tag}`;
+      document.getElementById('quiz-question-text').innerText = `${state.quiz.currentIndex + 1}. ${q.q}`;
+
+      const pct = ((state.quiz.currentIndex + 1) / quizQuestions.length) * 100;
+      document.getElementById('quiz-progress-bar').style.width = `${pct}%`;
+
+      document.getElementById('quiz-explanation-box').classList.add('hidden');
+
+      const container = document.getElementById('quiz-options-container');
+      container.innerHTML = '';
+
+      q.choices.forEach((choice, index) => {
+        const btn = document.createElement('button');
+        btn.id = `quiz-opt-${index}`;
+        btn.onclick = () => handleQuizAnswer(index);
+        btn.className = "quiz-opt-btn p-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-left text-xs sm:text-sm font-semibold text-slate-200 transition hover:border-cyan-400 active:scale-[0.98] flex items-center gap-3";
+        const letters = ['A', 'B', 'C', 'D'];
+        btn.innerHTML = `
+          <span class="w-7 h-7 rounded-xl bg-slate-800 border border-slate-600 text-cyan-300 font-bold flex items-center justify-center shrink-0">
+            ${letters[index]}
+          </span>
+          <span class="leading-relaxed">${choice}</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function handleQuizAnswer(selectedIndex) {
+      if (state.quiz.answered) return;
+      state.quiz.answered = true;
+
+      const q = quizQuestions[state.quiz.currentIndex];
+      const isCorrect = (selectedIndex === q.ans);
+
+      const allBtns = document.querySelectorAll('.quiz-opt-btn');
+      allBtns.forEach((b, idx) => {
+        b.disabled = true;
+        if (idx === q.ans) {
+          b.classList.remove('bg-slate-900/90', 'border-slate-700');
+          b.classList.add('bg-emerald-950/80', 'border-emerald-500', 'text-emerald-200');
+        } else if (idx === selectedIndex && !isCorrect) {
+          b.classList.remove('bg-slate-900/90', 'border-slate-700');
+          b.classList.add('bg-red-950/80', 'border-red-500', 'text-red-200');
+        }
+      });
+
+      const expBox = document.getElementById('quiz-explanation-box');
+      const titleEl = document.getElementById('quiz-feedback-title');
+      const textEl = document.getElementById('quiz-feedback-text');
+
+      if (isCorrect) {
+        playSound('correct');
+        state.quiz.score++;
+        state.quiz.streak++;
+        document.getElementById('quiz-score').innerText = state.quiz.score;
+        document.getElementById('quiz-streak').innerText = state.quiz.streak;
+        awardXP(20, 'Correct Answer!');
+
+        titleEl.innerHTML = `<span class="text-emerald-400">✅ Correct! Brilliant scientific deduction!</span>`;
+        expBox.className = "mt-6 p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500 text-sm";
+      } else {
+        playSound('wrong');
+        state.quiz.streak = 0;
+        document.getElementById('quiz-streak').innerText = state.quiz.streak;
+
+        titleEl.innerHTML = `<span class="text-rose-400">❌ Incorrect!</span>`;
+        expBox.className = "mt-6 p-4 rounded-2xl bg-rose-950/40 border border-rose-500 text-sm";
+      }
+
+      textEl.innerHTML = `<strong>Teacher Cikgu Fareez's Note:</strong> ${q.exp}`;
+      expBox.classList.remove('hidden');
+    }
+
+    function nextQuestion() {
+      playSound('click');
+      state.quiz.currentIndex++;
+      if (state.quiz.currentIndex < quizQuestions.length) {
+        renderCurrentQuizQuestion();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    function finishQuiz() {
+      playSound('finish');
+      document.getElementById('quiz-card-container').classList.add('hidden');
+      const resContainer = document.getElementById('quiz-result-container');
+      resContainer.classList.remove('hidden');
+
+      const total = quizQuestions.length;
+      const score = state.quiz.score;
+      const pct = Math.round((score / total) * 100);
+
+      document.getElementById('final-score-val').innerText = score;
+      document.getElementById('final-pct-val').innerText = `${pct}%`;
+
+      // Determine Performance Level (Tahap Penguasaan / PL)
+      let pl = "PL3";
+      if (score >= 18) pl = "PL6 (Exemplary)";
+      else if (score >= 14) pl = "PL5 (Very Good)";
+      else if (score >= 10) pl = "PL4 (Good)";
+      else pl = "PL3 (Achieved)";
+      document.getElementById('final-grade-val').innerText = pl;
+
+      // Sync to printable certificate
+      document.getElementById('cert-score-display').innerText = `${score}/20 (${pct}%)`;
+      document.getElementById('cert-pl-display').innerText = pl;
+
+      if (score >= 16) {
+        awardBadge(4, "Science DLP Master");
+      }
+
+      const now = new Date();
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('cert-date').innerText = now.toLocaleDateString('en-US', options);
+
+      confetti({
+        particleCount: 120,
+        spread: 100,
+        origin: { y: 0.5 }
+      });
+    }
+
+    function updateCertStudentName(name) {
+      const displayEl = document.getElementById('cert-student-name');
+      const cleanName = name.trim();
+      displayEl.innerText = cleanName ? cleanName.toUpperCase() : "CADET SPACE EXPLORER";
+    }
+
+    /* Modal Handlers */
+    function openMemberModal(key) {
+      playSound('click');
+      const data = membersDetail[key];
+      if (!data) return;
+      document.getElementById('modal-icon').innerText = data.icon;
+      document.getElementById('modal-title').innerText = data.title;
+      document.getElementById('modal-subtitle').innerText = data.subtitle;
+      document.getElementById('modal-body').innerHTML = data.text;
+      document.getElementById('member-modal').classList.remove('hidden');
+    }
+
+    function openPlanetModal(planetId) {
+      playSound('click');
+      const planet = planetsData.find(p => p.id === planetId);
+      if (!planet) return;
+      document.getElementById('modal-icon').innerText = planet.icon;
+      document.getElementById('modal-title').innerText = `${planet.name} (${planet.msName})`;
+      document.getElementById('modal-subtitle').innerText = `Position #${planet.id} from the Sun`;
+      document.getElementById('modal-body').innerHTML = `
+        <p>• <strong>Key Characteristic:</strong> ${planet.tag}</p>
+        <p>• <strong>Description:</strong> ${planet.desc}</p>
+        <p>• <strong>Orbital Pathway:</strong> Moves in an elliptical orbit held firmly by the Sun's gravitational force.</p>
+      `;
+      document.getElementById('member-modal').classList.remove('hidden');
+    }
+
+    function closeMemberModal() {
+      playSound('click');
+      document.getElementById('member-modal').classList.add('hidden');
+    }
+
+    function toggleBadgesModal() {
+      playSound('click');
+      const modal = document.getElementById('badges-modal');
+      modal.classList.toggle('hidden');
+      if (!modal.classList.contains('hidden')) {
+        renderBadgesList();
+      }
+    }
+
+    function renderBadgesList() {
+      const container = document.getElementById('badges-list-container');
+      if (!container) return;
+      container.innerHTML = Object.entries(state.badges).map(([id, b]) => `
+        <div class="flex items-center gap-3 p-3 rounded-2xl ${b.unlocked ? 'bg-amber-950/30 border border-amber-500/50' : 'bg-slate-800/40 border border-slate-700/60 opacity-60'}">
+          <div class="text-3xl p-2 rounded-xl bg-slate-900 border border-slate-700 ${b.unlocked ? '' : 'grayscale'}">
+            ${b.icon}
+          </div>
+          <div class="flex-1">
+            <h5 class="text-sm font-bold ${b.unlocked ? 'text-amber-300' : 'text-slate-400'}">${b.title}</h5>
+            <p class="text-[11px] text-slate-300">${b.desc}</p>
+          </div>
+          <span class="text-xs font-bold ${b.unlocked ? 'text-emerald-400' : 'text-slate-500'}">
+            ${b.unlocked ? '✅ Unlocked' : '🔒 Locked'}
+          </span>
+        </div>
+      `).join('');
+    }
+
+    function restartQuiz() {
+      state.quiz.currentIndex = 0;
+      state.quiz.score = 0;
+      state.quiz.streak = 0;
+      document.getElementById('quiz-result-container').classList.add('hidden');
+      document.getElementById('quiz-card-container').classList.remove('hidden');
+      renderCurrentQuizQuestion();
+    }
+
+    /* High-Resolution HTML5 Canvas Generator */
+    function generateCertificateCanvas() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1600;
+      canvas.height = 1100;
+      const ctx = canvas.getContext('2d');
+
+      const studentName = document.getElementById('cert-student-name').innerText || "CADET SPACE EXPLORER";
+      const certDate = document.getElementById('cert-date').innerText || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      const scoreDisplay = document.getElementById('cert-score-display').innerText || `${state.quiz.score}/20`;
+      const plDisplay = document.getElementById('cert-pl-display').innerText || "PL6 (Exemplary)";
+
+      // Cosmic Gradient Background
+      const bgGrad = ctx.createRadialGradient(800, 550, 80, 800, 550, 1000);
+      bgGrad.addColorStop(0, '#1e1b4b');
+      bgGrad.addColorStop(0.5, '#0f172a');
+      bgGrad.addColorStop(1, '#05070f');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 1600, 1100);
+
+      // Star accents
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      const starPoints = [
+        [150, 120], [320, 200], [1450, 160], [1380, 300], [180, 900], 
+        [280, 980], [1400, 920], [1490, 820], [800, 120], [450, 140],
+        [1150, 130], [200, 550], [1420, 560]
+      ];
+      starPoints.forEach(([x, y]) => {
+        ctx.beginPath();
+        ctx.arc(x, y, (x % 3) + 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Gold Borders
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 14;
+      ctx.strokeRect(50, 50, 1500, 1000);
+
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(75, 75, 1450, 950);
+
+      const corners = [[75, 75], [1525, 75], [75, 1025], [1525, 1025]];
+      ctx.fillStyle = '#fbbf24';
+      corners.forEach(([cx, cy]) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.textAlign = 'center';
+      ctx.font = '52px sans-serif';
+      ctx.fillText('🪐  ✨  🚀', 800, 160);
+
+      ctx.font = 'bold 44px "Fredoka", "Inter", sans-serif';
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText('CERTIFICATE OF SCIENTIFIC EXCELLENCE', 800, 235);
+
+      ctx.font = '600 22px "Inter", sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('VIRTUAL SCIENCE LAB CIKGU FAREEZ • SCIENCE DLP YEAR 3', 800, 280);
+
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(350, 315);
+      ctx.lineTo(1250, 315);
+      ctx.stroke();
+
+      ctx.font = '500 20px "Inter", sans-serif';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText('THIS CERTIFICATE IS PROUDLY CONFERRED UPON', 800, 380);
+
+      ctx.font = '900 52px "Fredoka", "Inter", sans-serif';
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(studentName, 800, 460);
+
+      const textWidth = ctx.measureText(studentName).width;
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(800 - textWidth / 2 - 20, 480);
+      ctx.lineTo(800 + textWidth / 2 + 20, 480);
+      ctx.stroke();
+
+      ctx.font = '400 25px "Fredoka", "Inter", sans-serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText('For demonstrating stellar scientific mastery in Topic 9: Solar System', 800, 550);
+      ctx.font = '400 21px "Inter", sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('Learning Standard 9.1.1: Listing the Members of the Solar System & Sequence of Planets from the Sun', 800, 595);
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      const pillWidth = 560;
+      const pillHeight = 70;
+      const pillX = 800 - pillWidth / 2;
+      const pillY = 645;
+      
+      ctx.beginPath();
+      ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 35);
+      ctx.fill();
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.font = 'bold 24px "Inter", sans-serif';
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText(`Final Score: ${scoreDisplay}  •  ${plDisplay}`, 800, 689);
+
+      // Signatures & Stamp
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 19px "Inter", sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('Awarded Date:', 160, 890);
+      ctx.font = 'bold 24px "Inter", sans-serif';
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillText(certDate, 160, 925);
+      ctx.font = '500 16px "Inter", sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('Official Lab Evaluation Record', 160, 955);
+
+      ctx.textAlign = 'center';
+      ctx.beginPath();
+      ctx.arc(800, 905, 52, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(217, 119, 6, 0.15)';
+      ctx.fill();
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.font = '40px sans-serif';
+      ctx.fillText('🎖️', 800, 915);
+      ctx.font = 'bold 12px "Inter", sans-serif';
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText('OFFICIAL SEAL', 800, 945);
+
+      ctx.textAlign = 'right';
+      ctx.font = 'bold 28px "Fredoka", "Inter", sans-serif';
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText('Cikgu Fareez', 1440, 900);
+      ctx.font = 'bold 18px "Inter", sans-serif';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText('Science DLP Lead Educator', 1440, 930);
+      ctx.font = '500 15px "Inter", sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('Virtual Science Lab Creator', 1440, 955);
+
+      return canvas;
+    }
+
+    async function getCertificateFile() {
+      const canvas = generateCertificateCanvas();
+      const rawName = document.getElementById('student-name-input').value.trim() || 'Cadet';
+      const cleanName = rawName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const fileName = `Certificate_${cleanName}_Solar_System_Year3.png`;
+
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            resolve(null);
+            return;
+          }
+          const file = new File([blob], fileName, { type: 'image/png' });
+          resolve({ file, blob, fileName, dataUrl: canvas.toDataURL('image/png') });
+        }, 'image/png');
+      });
+    }
+
+    async function shareCertificateNative() {
+      initAudio();
+      playSound('badge');
+
+      try {
+        const certData = await getCertificateFile();
+        if (!certData) throw new Error("Could not create image file");
+
+        if (navigator.canShare && navigator.canShare({ files: [certData.file] })) {
+          await navigator.share({
+            files: [certData.file],
+            title: 'Virtual Science Lab Certificate',
+            text: `Certificate of Scientific Excellence - Science DLP Year 3 (Cikgu Fareez)`
+          });
+          showToast("Saved or shared successfully! 📲", "🎉");
+          return;
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.warn("Native share error or unsupported:", err);
+        } else {
+          return;
+        }
+      }
+
+      const certData = await getCertificateFile();
+      openCertPreviewModal(certData.dataUrl, certData.fileName);
+      showToast("Tap & hold the certificate below to save to Photos! 📸", "📱");
+    }
+
+    async function downloadCertificatePNG() {
+      initAudio();
+      playSound('badge');
+
+      try {
+        const certData = await getCertificateFile();
+        if (!certData) throw new Error("Could not create image file");
+
+        const objectUrl = URL.createObjectURL(certData.blob);
+        const link = document.createElement('a');
+        link.download = certData.fileName;
+        link.href = objectUrl;
+        link.rel = 'noopener';
+        document.body.appendChild(link);
+        link.click();
+
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(objectUrl);
+        }, 1200);
+
+        openCertPreviewModal(certData.dataUrl, certData.fileName);
+        showToast("Certificate generated! Check downloads or tap & hold to save. 📥", "🎉");
+      } catch (err) {
+        console.error("Download fallback:", err);
+        const canvas = generateCertificateCanvas();
+        openCertPreviewModal(canvas.toDataURL('image/png'), 'Certificate_Cikgu_Fareez.png');
+      }
+    }
+
+    function downloadCertificateHTML() {
+      initAudio();
+      playSound('click');
+
+      const studentName = document.getElementById('cert-student-name').innerText;
+      const certDate = document.getElementById('cert-date').innerText;
+      const scoreDisplay = document.getElementById('cert-score-display').innerText;
+      const plDisplay = document.getElementById('cert-pl-display').innerText;
+
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Certificate - ${studentName}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    @page { size: landscape; margin: 10mm; }
+    body {
+      font-family: 'Fredoka', sans-serif;
+      background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+      color: #ffffff;
+      min-height: 95vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 15px;
+    }
+    .cert-box {
+      width: 100%;
+      max-width: 900px;
+      padding: 36px;
+      border: 8px double #d97706;
+      border-radius: 24px;
+      background: #0f172a;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      text-align: center;
+      box-sizing: border-box;
+    }
+    h1 { font-size: 28px; color: #fbbf24; margin: 10px 0; }
+    .name { font-size: 36px; color: #38bdf8; text-decoration: underline; margin: 18px 0; font-weight: 700; }
+    .pill { display: inline-block; padding: 8px 24px; border: 2px solid #d97706; border-radius: 9999px; background: #020617; color: #fbbf24; font-weight: bold; margin: 15px 0; }
+    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 36px; padding-top: 18px; border-top: 1px solid #334155; font-size: 14px; }
+    .print-btn { margin-top: 20px; padding: 12px 28px; border-radius: 12px; background: #f59e0b; color: #000; font-weight: bold; border: none; cursor: pointer; font-size: 15px; }
+    @media print { .print-btn { display: none !important; } body { background: #fff !important; color: #000 !important; } .cert-box { border-color: #b45309 !important; background: #fff !important; color: #000 !important; box-shadow: none !important; } h1 { color: #b45309 !important; } .name { color: #0284c7 !important; } }
+  </style>
+</head>
+<body>
+  <div class="cert-box">
+    <div style="font-size: 34px;">🪐 ✨ 🚀</div>
+    <h1>CERTIFICATE OF SCIENTIFIC EXCELLENCE</h1>
+    <p style="color: #94a3b8; font-size: 14px; margin-top: 2px;">Virtual Science Lab Cikgu Fareez • Science DLP Year 3</p>
+    <p style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #cbd5e1; margin-top: 24px;">This certificate is proudly awarded to</p>
+    <div class="name">${studentName}</div>
+    <p style="font-size: 15px; max-width: 680px; margin: 0 auto; line-height: 1.6; color: #e2e8f0;">
+      For demonstrating stellar scientific mastery in <strong>Topic 9: Solar System</strong> (Learning Standard 9.1.1: Listing the Members of the Solar System & Sequence of Planets).
+    </p>
+    <div class="pill">Final Score: ${scoreDisplay} • ${plDisplay}</div>
+    <div class="footer">
+      <div style="text-align: left;"><strong>Date Awarded:</strong><br>${certDate}</div>
+      <div style="font-size: 32px;">🎖️</div>
+      <div style="text-align: right;"><strong style="color: #fbbf24; font-size: 18px;">Cikgu Fareez</strong><br><span style="color: #94a3b8; font-size: 12px;">Science DLP Lead Educator</span></div>
+    </div>
+  </div>
+  <button class="print-btn" onclick="window.print()">🖨️ Print This Certificate (PDF)</button>
+</body>
+</html>`;
+
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const rawName = document.getElementById('student-name-input').value.trim() || 'Cadet';
+      const cleanName = rawName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const fileName = `Certificate_${cleanName}_Solar_System.html`;
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Saved as standalone HTML file! 📄", "✅");
+    }
+
+    function printCertificate() {
+      initAudio();
+      playSound('badge');
+      try {
+        window.print();
+      } catch (err) {
+        showToast("Sandbox blocked print. Opening HD image download! 📥", "ℹ️");
+        downloadCertificatePNG();
+      }
+    }
+
+    function openCertPreviewModal(dataUrl, fileName) {
+      const modal = document.getElementById('cert-preview-modal');
+      const img = document.getElementById('cert-preview-img');
+      const dlBtn = document.getElementById('cert-modal-download-btn');
+
+      img.src = dataUrl;
+      dlBtn.href = dataUrl;
+      dlBtn.download = fileName;
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeCertPreviewModal() {
+      playSound('click');
+      document.getElementById('cert-preview-modal').classList.add('hidden');
+    }
+
+    setTimeout(() => {
+      awardBadge(1, "Solar Core Expert");
+    }, 4500);
+
+    window.addEventListener('load', () => {
+      renderPlanetsSequence();
+      initMissionA();
+      loadMissionBCard();
+      renderCurrentQuizQuestion();
+    });
+
+  </script>
+
+  <!-- Live Cloud Realtime Backend Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'solar-system-dlp-cikgu-fareez';
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+
+    // Initialize cloud backend if config is present, or operate seamlessly with in-memory sync
+    if (typeof __firebase_config !== 'undefined') {
+      try {
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        // Authenticate before query operations
+        const initAuth = async () => {
+          try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              const cred = await signInWithCustomToken(auth, __initial_auth_token);
+              currentUser = cred.user;
+            } else {
+              const cred = await signInAnonymously(auth);
+              currentUser = cred.user;
+            }
+            listenToScores();
+          } catch (authErr) {
+            console.warn("Auth initialization notice:", authErr);
+          }
+        };
+        initAuth();
+      } catch (e) {
+        console.warn("Cloud synchronization notice:", e);
+      }
+    }
+
+    function listenToScores() {
+      if (!db || !currentUser) return;
+      try {
+        const scoresCol = collection(db, 'artifacts', appId, 'public', 'data', 'solar_scores');
+        onSnapshot(scoresCol, (snapshot) => {
+          const cloudList = [];
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            cloudList.push({
+              id: docSnap.id,
+              name: data.name || 'Cadet',
+              score: Number(data.score) || 0,
+              total: Number(data.total) || 20,
+              percentage: Number(data.percentage) || 0,
+              pl: data.pl || 'PL3',
+              timestamp: data.timestamp || Date.now(),
+              dateStr: data.dateStr || ''
+            });
+          });
+
+          // Sort in JavaScript memory (strictly adhering to no compound queries rule)
+          cloudList.sort((a, b) => b.score - a.score || b.timestamp - a.timestamp);
+          state.scoreboard.allEntries = cloudList;
+          state.scoreboard.filteredEntries = cloudList;
+          renderScoreboardUI();
+        }, (error) => {
+          console.warn("Realtime listener notice:", error);
+        });
+      } catch (err) {
+        console.warn("Listener setup notice:", err);
+      }
+    }
+
+    window.submitScoreToLeaderboard = async function() {
+      initAudio();
+      playSound('badge');
+
+      const nameInput = document.getElementById('student-name-input');
+      const studentName = nameInput ? nameInput.value.trim() : '';
+
+      if (!studentName) {
+        showToast("Please type your name first! ✍️", "⚠️");
+        nameInput.focus();
+        return;
+      }
+
+      const total = quizQuestions.length;
+      const score = state.quiz.score;
+      const percentage = Math.round((score / total) * 100);
+
+      let pl = "PL3 (Achieved)";
+      if (score >= 18) pl = "PL6 (Exemplary)";
+      else if (score >= 14) pl = "PL5 (Very Good)";
+      else if (score >= 10) pl = "PL4 (Good)";
+
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const entry = {
+        name: studentName.toUpperCase(),
+        score: score,
+        total: total,
+        percentage: percentage,
+        pl: pl,
+        timestamp: Date.now(),
+        dateStr: dateStr
+      };
+
+      const submitBtn = document.getElementById('submit-scoreboard-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span>⏳</span> Submitting to Class Board...`;
+      }
+
+      if (db && currentUser) {
+        try {
+          const scoresCol = collection(db, 'artifacts', appId, 'public', 'data', 'solar_scores');
+          await addDoc(scoresCol, entry);
+          showToast("Score successfully submitted to live board! 🏆", "🎉");
+        } catch (saveErr) {
+          console.warn("Cloud save notice, updating locally:", saveErr);
+          insertLocalScore(entry);
+        }
+      } else {
+        insertLocalScore(entry);
+      }
+
+      state.scoreboard.hasSubmittedCurrent = true;
+      if (submitBtn) {
+        submitBtn.innerHTML = `<span>✅</span> Submitted to Live Scoreboard!`;
+        submitBtn.classList.remove('from-emerald-500', 'to-cyan-500');
+        submitBtn.classList.add('bg-slate-800', 'text-emerald-400', 'border', 'border-emerald-500/50');
+      }
+
+      confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
+      setTimeout(() => {
+        switchTab('scoreboard');
+      }, 1100);
+    };
+
+    function insertLocalScore(entry) {
+      state.scoreboard.allEntries.push(entry);
+      state.scoreboard.allEntries.sort((a, b) => b.score - a.score || b.timestamp - a.timestamp);
+      state.scoreboard.filteredEntries = [...state.scoreboard.allEntries];
+      renderScoreboardUI();
+      showToast("Score recorded on leaderboard! 🏆", "✅");
+    }
+
+    window.refreshScoreboardData = function() {
+      playSound('click');
+      renderScoreboardUI();
+      showToast("Scoreboard updated! 🔄", "📊");
+    };
+
+    window.filterScoreboardTable = function(query) {
+      const q = query.trim().toLowerCase();
+      if (!q) {
+        state.scoreboard.filteredEntries = [...state.scoreboard.allEntries];
+      } else {
+        state.scoreboard.filteredEntries = state.scoreboard.allEntries.filter(e => 
+          e.name.toLowerCase().includes(q)
+        );
+      }
+      renderScoreboardTableOnly();
+    };
+
+    window.renderScoreboardUI = function() {
+      const entries = state.scoreboard.allEntries;
+      
+      // Update Overview Summary Stats
+      const totalCount = entries.length;
+      document.getElementById('stat-total-pupils').innerText = totalCount;
+
+      if (totalCount > 0) {
+        const sumScores = entries.reduce((acc, curr) => acc + curr.score, 0);
+        const avg = (sumScores / totalCount).toFixed(1);
+        const maxScore = Math.max(...entries.map(e => e.score));
+        const pl6Count = entries.filter(e => e.score >= 18).length;
+
+        document.getElementById('stat-avg-score').innerText = `${avg} / 20`;
+        document.getElementById('stat-high-score').innerText = `${maxScore} / 20`;
+        document.getElementById('stat-pl6-count').innerText = pl6Count;
+      } else {
+        document.getElementById('stat-avg-score').innerText = `0 / 20`;
+        document.getElementById('stat-high-score').innerText = `0`;
+        document.getElementById('stat-pl6-count').innerText = `0`;
+      }
+
+      // Render Top 3 Podium
+      renderPodium(entries);
+
+      // Render Main Table
+      state.scoreboard.filteredEntries = [...entries];
+      renderScoreboardTableOnly();
+    };
+
+    function renderPodium(entries) {
+      const podiumContainer = document.getElementById('top-podium-container');
+      if (!podiumContainer) return;
+
+      const top3 = entries.slice(0, 3);
+      const badges = [
+        { rank: "1st Place", icon: "🥇", border: "border-amber-400", bg: "from-amber-500/20 to-yellow-600/10", text: "text-amber-300" },
+        { rank: "2nd Place", icon: "🥈", border: "border-slate-300", bg: "from-slate-400/20 to-slate-600/10", text: "text-slate-200" },
+        { rank: "3rd Place", icon: "🥉", border: "border-amber-700", bg: "from-amber-700/20 to-orange-900/10", text: "text-amber-500" }
+      ];
+
+      if (top3.length === 0) {
+        podiumContainer.innerHTML = `
+          <div class="col-span-full cosmic-card p-6 rounded-2xl text-center text-slate-400 border border-dashed border-slate-700">
+            <span class="text-3xl">🚀</span>
+            <p class="text-sm font-semibold mt-2">Podium is currently waiting for the first space explorers!</p>
+          </div>
+        `;
+        return;
+      }
+
+      podiumContainer.innerHTML = top3.map((e, idx) => {
+        const b = badges[idx];
+        return `
+          <div class="cosmic-card p-5 rounded-2xl bg-gradient-to-b ${b.bg} border-2 ${b.border} flex items-center gap-4 shadow-xl">
+            <div class="text-4xl shrink-0 p-2 rounded-2xl bg-slate-900/80 border border-slate-700">
+              ${b.icon}
+            </div>
+            <div class="flex-1 min-w-0">
+              <span class="text-[10px] font-orbitron uppercase tracking-wider font-extrabold ${b.text}">${b.rank}</span>
+              <h4 class="font-extrabold text-white text-sm sm:text-base truncate">${e.name}</h4>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="font-orbitron font-black text-amber-300 text-sm">${e.score}/20</span>
+                <span class="text-[11px] text-cyan-300 font-semibold">(${e.percentage}%)</span>
+                <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-slate-300">${e.pl.split(' ')[0]}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderScoreboardTableOnly() {
+      const tbody = document.getElementById('scoreboard-table-body');
+      if (!tbody) return;
+
+      const list = state.scoreboard.filteredEntries;
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-8 text-center text-slate-400">
+              No matching records found.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = list.map((e, idx) => {
+        let medal = `#${idx + 1}`;
+        if (idx === 0) medal = '🥇 1st';
+        else if (idx === 1) medal = '🥈 2nd';
+        else if (idx === 2) medal = '🥉 3rd';
+
+        const plColor = e.score >= 18 ? 'bg-purple-900/60 text-purple-300 border-purple-500/40' :
+                        e.score >= 14 ? 'bg-emerald-900/60 text-emerald-300 border-emerald-500/40' :
+                        e.score >= 10 ? 'bg-blue-900/60 text-blue-300 border-blue-500/40' : 'bg-slate-800 text-slate-300 border-slate-600';
+
+        return `
+          <tr class="hover:bg-slate-900/60 transition">
+            <td class="py-3.5 px-4 text-center font-bold text-amber-400 font-orbitron">${medal}</td>
+            <td class="py-3.5 px-4 font-bold text-white flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-xs">🧑‍🚀</span>
+              <span class="truncate max-w-[220px]">${e.name}</span>
+            </td>
+            <td class="py-3.5 px-4 text-center font-extrabold text-cyan-300 font-orbitron">${e.score} / 20</td>
+            <td class="py-3.5 px-4 text-center font-bold text-amber-300 font-orbitron">${e.percentage}%</td>
+            <td class="py-3.5 px-4 text-center">
+              <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${plColor}">
+                ${e.pl}
+              </span>
+            </td>
+            <td class="py-3.5 px-4 text-center text-xs text-slate-400 font-mono">${e.dateStr || 'Recent'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    window.copyScoresToClipboard = function() {
+      initAudio();
+      playSound('click');
+
+      const entries = state.scoreboard.allEntries;
+      if (entries.length === 0) {
+        showToast("No student records to copy yet! ℹ️", "📋");
+        return;
+      }
+
+      // Format as tab-separated values (ideal for direct pasting into Microsoft Excel / Google Sheets)
+      let tsv = "Rank\tCadet Name\tScore\tTotal\tPercentage (%)\tPerformance Level\tDate & Time\n";
+      entries.forEach((e, idx) => {
+        tsv += `${idx + 1}\t${e.name}\t${e.score}\t${e.total}\t${e.percentage}%\t${e.pl}\t${e.dateStr}\n`;
+      });
+
+      const tempInput = document.createElement("textarea");
+      tempInput.style.position = "fixed";
+      tempInput.style.left = "-9999px";
+      tempInput.value = tsv;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      
+      try {
+        document.execCommand('copy');
+        showToast("Copied to clipboard! Ready to paste into Excel! 📋", "✅");
+      } catch (err) {
+        showToast("Could not auto-copy, downloading CSV instead... 📥", "ℹ️");
+        exportScoresCSV();
+      } finally {
+        document.body.removeChild(tempInput);
+      }
+    };
+
+    window.exportScoresCSV = function() {
+      initAudio();
+      playSound('click');
+
+      const entries = state.scoreboard.allEntries;
+      if (entries.length === 0) {
+        showToast("No student records to export yet! ℹ️", "📥");
+        return;
+      }
+
+      let csv = "Rank,Cadet Name,Score,Total,Percentage,Performance Level,Date Time\n";
+      entries.forEach((e, idx) => {
+        csv += `"${idx + 1}","${e.name.replace(/"/g, '""')}","${e.score}","${e.total}","${e.percentage}%","${e.pl}","${e.dateStr}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Solar_System_Year3_Scores_Cikgu_Fareez.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast("CSV file exported successfully! 📥", "🎉");
+    };
+  </script>
+</body>
+</html>
